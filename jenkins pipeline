@@ -1,0 +1,21 @@
+pipeline {
+   agent any
+      stages {
+        stage('checkout) {
+         steps{
+              checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'email', url: 'repo name']]])
+              sh'''
+              aws s3 ls 
+              aws s3 mb s3://bucket-name
+              touch index.html
+              aws s3 cp index.html s3://bucket-name
+              cd $WORKSPACE/json
+              sed -i 's|BUCKET_NAME|bucket-name|g' s3.json
+              aws s3api put-bucket-policy --bucket bucket-name --policy file://s3.json
+              sed -i 's|awsexamplebucket|bucket-name|g' cdn.json
+              aws cloudfront create-distribution --distribution-config file://cdn.json
+              '''
+           }
+        }
+    }
+}
